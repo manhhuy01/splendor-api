@@ -8,4 +8,4 @@ app.use(cors())
 app.get('/', (req, res) => res.send('welcome'))
 
 
-app.listen(3001, () => console.log(`Listening on 3001`))
+app.listen(5000, () => console.log(`Listening on 5000`))
