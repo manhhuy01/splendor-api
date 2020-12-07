@@ -73,13 +73,13 @@ const resetGame = () => {
   };
 };
 
-const addTokenToPlayer = (curToken, token) => {
+const addToken = (curToken, token) => {
   let newToken = { ...curToken };
   Object.keys(token).forEach(color => newToken = { ...newToken, [color]: newToken[color] + token[color] });
   return newToken;
 };
 
-const removeTokenFromTable = (curToken, token) => {
+const removeToken = (curToken, token) => {
   let newToken = { ...curToken };
   Object.keys(token).forEach(color => newToken = { ...newToken, [color]: newToken[color] - token[color] });
   return newToken;
@@ -89,12 +89,28 @@ const sumToken = (token) => {
   return Object.keys(token).reduce((agg, item)=> agg+= token[item], 0);
 };
 
+const validateRoomAndTurn = (rooms, socketId, roomId) => {
+  // get data
+  const room = rooms.find(x => x.id === roomId);
+
+  // validate
+  if (!room) return;
+  if (!room.game.started) return;
+  
+  const user = room.players.find(x => x.socketId === socketId);
+  const player = room.game.players[user.turn];
+  if (!player) return;
+  if (user.turn !== room.game.currentTurn) return;
+  return true;
+};
+
 
 module.exports = {
   initGame4player,
   resetGame,
   initTurn,
-  addTokenToPlayer,
-  removeTokenFromTable,
+  addToken,
+  removeToken,
   sumToken,
+  validateRoomAndTurn,
 };
