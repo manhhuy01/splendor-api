@@ -14,7 +14,7 @@ const NEW_PLAYER = {
   },
   cards: [],
   deposit_cards: [],
-  DUKE: []
+  duke: []
 };
 
 const initTurn = (players) => {
