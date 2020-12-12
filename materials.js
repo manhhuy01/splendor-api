@@ -187,7 +187,7 @@ const DUKE = {
       [COLOR.WHITE]: 4,
       [COLOR.BLACK]: 4,
     },
-    image: 'ct_0.png'
+    image: 'ct_0'
   },
   2: {
     id: 2,
@@ -196,7 +196,7 @@ const DUKE = {
       [COLOR.WHITE]: 4,
       [COLOR.BLUE]: 4,
     },
-    image: 'ct_5.png'
+    image: 'ct_5'
 
   },
   3: {
@@ -206,7 +206,7 @@ const DUKE = {
       [COLOR.RED]: 4,
       [COLOR.BLACK]: 4,
     },
-    image: 'ct_4.png'
+    image: 'ct_4'
 
   },
   4: {
@@ -216,7 +216,7 @@ const DUKE = {
       [COLOR.RED]: 4,
       [COLOR.GREEN]: 4,
     },
-    image: 'ct_2.png'
+    image: 'ct_2'
   },
   5: {
     id: 5,
@@ -225,7 +225,7 @@ const DUKE = {
       [COLOR.BLUE]: 4,
       [COLOR.GREEN]: 4,
     },
-    image: 'ct_6.png'
+    image: 'ct_6'
   },
   6: {
     id: 6,
@@ -235,7 +235,7 @@ const DUKE = {
       [COLOR.BLUE]: 3,
       [COLOR.GREEN]: 3,
     },
-    image: 'ct_3.png',
+    image: 'ct_3',
   },
   7: {
     id: 7,
@@ -245,7 +245,7 @@ const DUKE = {
       [COLOR.BLUE]: 3,
       [COLOR.WHITE]: 3,
     },
-    image: 'ct_9.png'
+    image: 'ct_9'
   },
   8: {
     id: 8,
@@ -255,7 +255,7 @@ const DUKE = {
       [COLOR.RED]: 3,
       [COLOR.GREEN]: 3,
     },
-    image: 'ct_8.png'
+    image: 'ct_8'
   },
   9: {
     id: 9,
@@ -265,7 +265,7 @@ const DUKE = {
       [COLOR.BLUE]: 3,
       [COLOR.WHITE]: 3,
     },
-    image: 'ct_1.png'
+    image: 'ct_1'
   },
   10: {
     id: 10,
@@ -275,7 +275,7 @@ const DUKE = {
       [COLOR.BLACK]: 3,
       [COLOR.WHITE]: 3,
     },
-    image: 'ct_7.png'
+    image: 'ct_7'
   },
 
 };

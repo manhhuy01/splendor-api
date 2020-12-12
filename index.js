@@ -72,12 +72,12 @@ io.on('connection', (socket) => {
         if (room.players.length === room.maxPlayer) {
           room.isFull = true;
         }
-       
+
         // thế chỗ
-        if(room.game.started){
-          [1,2,3,4].forEach(turn => {
-            if(room.game.players[turn] && !room.players.find(x=>x.turn === turn)){
-              const newPlayer = room.players.find(x=>x.socketId === socket.id);
+        if (room.game.started) {
+          [1, 2, 3, 4].forEach(turn => {
+            if (room.game.players[turn] && !room.players.find(x => x.turn === turn)) {
+              const newPlayer = room.players.find(x => x.socketId === socket.id);
               newPlayer.turn = turn;
               return;
             }
@@ -174,7 +174,7 @@ app.post('/collect_token', (req, res) => {
   player.token = gameHandler.addToken(player.token, token);
   room.game.table.token = gameHandler.removeToken(room.game.table.token, token);
 
-  if (gameHandler.sumToken(player.token) <= 10){
+  if (gameHandler.sumToken(player.token) <= 10) {
     room.game.currentTurn = gameHandler.nextTurn(room.game);
   }
 
@@ -244,7 +244,7 @@ app.post('/deposit_card', (req, res) => {
     if (!card) return sendBadRequest(res);
 
     game.table.card_table.up[level] = game.table.card_table.up[level].filter(x => x.id !== deposit_card_id);
-    if(game.table.card_table.down[level].length){
+    if (game.table.card_table.down[level].length) {
       game.table.card_table.up[level].push(game.table.card_table.down[level].shift());
     }
     player.deposit_cards.push(card);
@@ -293,10 +293,10 @@ app.post('/buy_card', (req, res) => {
       if (card.price[color] <= cardWithColor.length + tokenWithColor) return newToken;
 
       const tokenGold = tokenToBuy[COLOR.GOLD] || 0;
-      if(!tokenGold) return undefined;
+      if (!tokenGold) return undefined;
       if (card.price[color] <= cardWithColor.length + tokenWithColor + tokenGold) {
         newToken[COLOR.GOLD] -= (card.price[color] - cardWithColor.length - tokenWithColor);
-        if(newToken[COLOR.GOLD] < 0) return undefined;
+        if (newToken[COLOR.GOLD] < 0) return undefined;
         return newToken;
       }
       return newToken;
@@ -311,15 +311,15 @@ app.post('/buy_card', (req, res) => {
   };
   let level = materials.getLevelCard(card_id);
   if (!level) return sendBadRequest(res);
-  
+
   // coi thử mua trên bàn hay không
   let card = game.table.card_table.up[level].find(c => c.id === card_id);
   if (card) {
+    if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(res, 'Không đủ token để mua');
     game.table.card_table.up[level] = game.table.card_table.up[level].filter(x => x.id !== card_id);
-    if(game.table.card_table.down[level].length){
+    if (game.table.card_table.down[level].length) {
       game.table.card_table.up[level].push(game.table.card_table.down[level].shift());
     }
-    if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(res, 'Không đủ token để mua');
     const newToken = removeTokenFromBuying(token, player.token);
     if (!newToken) return sendBadRequest(res, 'Giao dịch thất bại');
     player.token = newToken;
@@ -334,6 +334,13 @@ app.post('/buy_card', (req, res) => {
     player.token = newToken;
     player.cards.push(card);
     player.deposit_cards = player.deposit_cards.filter(x => x.id !== card.id);
+  }
+
+  // check trigger duke.
+  let duke = gameHandler.getDukeFromCards(game.table.dukes, player.cards);
+  if (duke) {
+    player.dukes.push(duke);
+    game.table.dukes = game.table.dukes.filter(x => x.id === duke.id);
   }
 
   room.game.currentTurn = gameHandler.nextTurn(room.game);

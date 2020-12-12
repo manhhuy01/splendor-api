@@ -14,7 +14,7 @@ const NEW_PLAYER = {
   },
   cards: [],
   deposit_cards: [],
-  duke: []
+  dukes: []
 };
 
 const initTurn = (players) => {
@@ -49,7 +49,7 @@ const initGame = (numberPlayer) => {
           3: shuffle(shuffle(shuffle(_.cloneDeep(CARD_TABLE[3])))),
         }
       },
-      duke_table: shuffle(shuffle(DUKES)).slice(0, 5),
+      dukes: shuffle(shuffle(DUKES)).slice(0, 5),
     },
     players: {
       1: _.cloneDeep(NEW_PLAYER),
@@ -68,13 +68,13 @@ const initGame = (numberPlayer) => {
 
   if(numberPlayer === 3){
     [COLOR.BLACK, COLOR.BLUE, COLOR.GREEN, COLOR.RED, COLOR.WHITE].forEach(color => game.table.token[color] = 5);
-    game.table.duke_table = game.table.duke_table.splice(0, 4);
+    game.table.dukes = game.table.dukes.splice(0, 4);
     delete game.players[4];
   }
 
   if(numberPlayer === 2){
     [COLOR.BLACK, COLOR.BLUE, COLOR.GREEN, COLOR.RED, COLOR.WHITE].forEach(color => game.table.token[color] = 4);
-    game.table.duke_table = game.table.duke_table.splice(0, 3);
+    game.table.dukes = game.table.dukes.splice(0, 3);
     delete game.players[4];
     delete game.players[3];
   }
@@ -128,6 +128,18 @@ const nextTurn = (game) => {
   return turn;
 };
 
+const getDukeFromCards = (dukes, cards) => {
+  const dukeAccept = dukes.filter(duke => {
+    let valid = false;
+    Object.keys(duke.price).forEach(color => {
+      const colorCards = cards.filter(x=>x.property === color);
+      if(colorCards.length < duke.price[color]) valid = false;
+    });
+    return valid;
+  });
+  return dukeAccept[0];
+};
+
 module.exports = {
   initGame,
   resetGame,
@@ -137,4 +149,5 @@ module.exports = {
   sumToken,
   validateRoomAndTurn,
   nextTurn,
+  getDukeFromCards
 };
