@@ -3,7 +3,19 @@
 const { COLOR, DUKES, CARD_TABLE } = require('./materials');
 const _ = require('lodash');
 const { shuffle } = require('./utils');
-
+const NEW_PLAYER = {
+  token: {
+    [COLOR.BLACK]: 0,
+    [COLOR.BLUE]: 0,
+    [COLOR.GREEN]: 0,
+    [COLOR.WHITE]: 0,
+    [COLOR.RED]: 0,
+    [COLOR.GOLD]: 0,
+  },
+  cards: [],
+  deposit_cards: [],
+  DUKE: []
+};
 
 const initTurn = (players) => {
   let newArr = shuffle(shuffle(players));
@@ -12,28 +24,17 @@ const initTurn = (players) => {
     turn: index + 1,
   }));
 };
-const initGame4player = () => {
-  const newPlayer = {
-    token: {
-      [COLOR.BLACK]: 0,
-      [COLOR.BLUE]: 0,
-      [COLOR.GREEN]: 0,
-      [COLOR.WHITE]: 0,
-      [COLOR.RED]: 0,
-      [COLOR.GOLD]: 0,
-    },
-    cards: [],
-    DUKE: []
-  };
+const initGame = (numberPlayer) => {
+  
   let game = {
     started: true,
     table: {
       token: {
-        [COLOR.BLACK]: 7,
+        [COLOR.WHITE]: 7,
         [COLOR.BLUE]: 7,
         [COLOR.GREEN]: 7,
-        [COLOR.WHITE]: 7,
         [COLOR.RED]: 7,
+        [COLOR.BLACK]: 7,
         [COLOR.GOLD]: 5,
       },
       card_table: {
@@ -51,10 +52,10 @@ const initGame4player = () => {
       duke_table: shuffle(shuffle(DUKES)).slice(0, 5),
     },
     players: {
-      1: _.cloneDeep(newPlayer),
-      2: _.cloneDeep(newPlayer),
-      3: _.cloneDeep(newPlayer),
-      4: _.cloneDeep(newPlayer)
+      1: _.cloneDeep(NEW_PLAYER),
+      2: _.cloneDeep(NEW_PLAYER),
+      3: _.cloneDeep(NEW_PLAYER),
+      4: _.cloneDeep(NEW_PLAYER)
     },
     currentTurn: 1,
     round: 1,
@@ -64,8 +65,25 @@ const initGame4player = () => {
   game.table.card_table.up[2] = game.table.card_table.down[2].splice(0, 4);
   game.table.card_table.up[3] = game.table.card_table.down[3].splice(0, 4);
 
+
+  if(numberPlayer === 3){
+    [COLOR.BLACK, COLOR.BLUE, COLOR.GREEN, COLOR.RED, COLOR.WHITE].forEach(color => game.table.token[color] = 5);
+    game.table.duke_table = game.table.duke_table.splice(0, 4);
+    delete game.players[4];
+  }
+
+  if(numberPlayer === 2){
+    [COLOR.BLACK, COLOR.BLUE, COLOR.GREEN, COLOR.RED, COLOR.WHITE].forEach(color => game.table.token[color] = 4);
+    game.table.duke_table = game.table.duke_table.splice(0, 3);
+    delete game.players[4];
+    delete game.players[3];
+  }
+
+
   return game;
 };
+
+
 
 const resetGame = () => {
   return {
@@ -104,13 +122,19 @@ const validateRoomAndTurn = (rooms, socketId, roomId) => {
   return true;
 };
 
+const nextTurn = (game) => {
+  let turn = game.currentTurn + 1;
+  if (turn > Object.keys(game.players).length) turn = 1;
+  return turn;
+};
 
 module.exports = {
-  initGame4player,
+  initGame,
   resetGame,
   initTurn,
   addToken,
   removeToken,
   sumToken,
   validateRoomAndTurn,
+  nextTurn,
 };
