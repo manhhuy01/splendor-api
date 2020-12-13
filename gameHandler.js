@@ -3,6 +3,7 @@
 const { COLOR, DUKES, CARD_TABLE } = require('./materials');
 const _ = require('lodash');
 const { shuffle } = require('./utils');
+const { cloneDeep } = require('lodash');
 const NEW_PLAYER = {
   token: {
     [COLOR.BLACK]: 0,
@@ -14,7 +15,8 @@ const NEW_PLAYER = {
   },
   cards: [],
   deposit_cards: [],
-  dukes: []
+  dukes: [],
+  pv: 0,
 };
 
 const initTurn = (players) => {
@@ -27,6 +29,7 @@ const initTurn = (players) => {
 const initGame = (numberPlayer) => {
   
   let game = {
+    finished: false,
     started: true,
     table: {
       token: {
@@ -128,6 +131,7 @@ const nextTurn = (game) => {
   return turn;
 };
 
+
 const getDukeFromCards = (dukes, cards) => {
   const dukeAccept = dukes.filter(duke => {
     let valid = false;
@@ -140,6 +144,46 @@ const getDukeFromCards = (dukes, cards) => {
   return dukeAccept[0];
 };
 
+const calculateToFinishGame = game => {
+  let newGame = cloneDeep(game);
+  if(newGame.currentTurn !== 1) return newGame;
+  let winners = [];
+  let bestPointValue = 0;
+  let minCard = 100;
+  let minDepositCard = 100;
+  Object.keys(newGame.players).forEach(turn => {
+    newGame.players[turn].pv = 0;
+    newGame.players[turn].pv += newGame.players[turn].cards.reduce((pv, card)=> pv+= card.pv ,0);
+    newGame.players[turn].pv += newGame.players[turn].dukes.reduce((pv, duke)=> pv+= duke.pv, 0);
+    if(newGame.players[turn].pv >= 15){
+      winners.push(newGame.players[turn]);
+      if(newGame.players[turn].pv > bestPointValue) bestPointValue = newGame.players[turn].pv;
+      if(newGame.players[turn].cards.length < minCard){
+        minCard = newGame.players[turn].cards.length;
+      }
+      if(newGame.players[turn].deposit_cards.length < minDepositCard){
+        minDepositCard = newGame.players[turn].deposit_cards.length;
+      }
+        
+    }
+  });
+  if(winners.length > 1){
+    winners = winners.filter(x=> x.pv === bestPointValue);
+    if(winners.length > 1){
+      winners = winners.filter(x=> x.cards.length === minCard);
+      if(winners.length > 1){
+        winners = winners.filter(x=>x.deposit_cards.length === minDepositCard);
+      }
+    }
+  }
+  if(winners.length){
+    newGame.finished = true;
+    newGame.winners = winners;
+  }
+  return newGame;
+
+};
+
 module.exports = {
   initGame,
   resetGame,
@@ -149,5 +193,6 @@ module.exports = {
   sumToken,
   validateRoomAndTurn,
   nextTurn,
-  getDukeFromCards
+  getDukeFromCards,
+  calculateToFinishGame,
 };

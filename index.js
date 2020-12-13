@@ -2,6 +2,7 @@
 /*global require, process, console*/
 
 const gameHandler = require('./gameHandler');
+const { CARDS } = require('./materials');
 const PORT = process.env.PORT || 5000;
 
 const express = require('express');
@@ -91,23 +92,6 @@ io.on('connection', (socket) => {
 
       break;
     }
-    case 'start': {
-      let { roomId } = data;
-      const room = rooms.find(x => x.id === roomId);
-      //TODO: validate player
-      if (room) {
-        room.game.started = true;
-
-        // init game
-        // io.to init game
-        room.game = gameHandler.initGame(room.players.length);
-        room.players = gameHandler.initTurn(room.players);
-        io.to(`room.${data.roomId}`).emit(`room.${data.roomId}.info`, room);
-      }
-      console.log(`game at room ${room.id} started`);
-      break;
-    }
-
     default:
       break;
     }
@@ -123,6 +107,24 @@ const sendBadRequest = (res, mes = 'Lỗi gì chưa rảnh ghi') => {
 const sendOkRequest = res => {
   res.status(200).send({});
 };
+
+app.post('/start', (req, res) => {
+  let { roomId } = req.body;
+  const room = rooms.find(x => x.id === roomId);
+  //TODO: validate player
+  if (room.players.length < 2) return sendBadRequest(res, 'một mình chơi với dế à?');
+  if (room.players.length > 4) return sendBadRequest(res, 'đông quá rồi');
+  if (room) {
+    room.game.started = true;
+
+    // init game
+    // io.to init game
+    room.game = gameHandler.initGame(room.players.length);
+    room.players = gameHandler.initTurn(room.players);
+    io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
+  }
+  return sendOkRequest(res);
+});
 
 app.post('/collect_token', (req, res) => {
   // bốc token thường
@@ -176,6 +178,7 @@ app.post('/collect_token', (req, res) => {
 
   if (gameHandler.sumToken(player.token) <= 10) {
     room.game.currentTurn = gameHandler.nextTurn(room.game);
+    room.game = gameHandler.calculateToFinishGame(room.game);
   }
 
   // noti
@@ -198,7 +201,9 @@ app.post('/return_token', (req, res) => {
   player.token = gameHandler.removeToken(player.token, token);
   room.game.table.token = gameHandler.addToken(room.game.table.token, token);
   if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(res, 'nhả cho hết coi');
+
   room.game.currentTurn = gameHandler.nextTurn(room.game);
+  room.game = gameHandler.calculateToFinishGame(room.game);
   // noti
   io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   return sendOkRequest(res);
@@ -217,6 +222,7 @@ app.post('/throw_turn', (req, res) => {
   // không làm gì cả, bỏ lượt
 
   room.game.currentTurn = gameHandler.nextTurn(room.game);
+  room.game = gameHandler.calculateToFinishGame(room.game);
   // noti
   io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   return sendOkRequest(res);
@@ -264,7 +270,7 @@ app.post('/deposit_card', (req, res) => {
   }
 
   room.game.currentTurn = gameHandler.nextTurn(room.game);
-
+  room.game = gameHandler.calculateToFinishGame(room.game);
   // noti
   io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   return sendOkRequest(res);
@@ -309,13 +315,25 @@ app.post('/buy_card', (req, res) => {
       return newToken;
     }, cloneDeep(playerToken));
   };
+
+  const validateTokenBuyFromPlayerToken = () => Object.keys(token).reduce((rs, color) => {
+    if (token[color] > player.token[color]) rs = false;
+    return rs;
+  }, true);
+
+  if(!validateTokenBuyFromPlayerToken()) return sendBadRequest(res, 'token mua nhiều hơn token có, hack à?');
+
   let level = materials.getLevelCard(card_id);
   if (!level) return sendBadRequest(res);
 
+  let card = CARDS[card_id];
+  if (!card) return sendBadRequest(res, 'mua card bậy bạ');
+  if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(res, 'Không đủ token để mua');
+
   // coi thử mua trên bàn hay không
-  let card = game.table.card_table.up[level].find(c => c.id === card_id);
+  card = game.table.card_table.up[level].find(c => c.id === card_id);
+
   if (card) {
-    if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(res, 'Không đủ token để mua');
     game.table.card_table.up[level] = game.table.card_table.up[level].filter(x => x.id !== card_id);
     if (game.table.card_table.down[level].length) {
       game.table.card_table.up[level].push(game.table.card_table.down[level].shift());
@@ -328,13 +346,14 @@ app.post('/buy_card', (req, res) => {
     card = player.deposit_cards.find(x => x.id === card_id);
     if (!card) return sendBadRequest(res, 'mua bài không có trên tay');
     // mua từ bài deposit
-    if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(res, 'không đủ token để mua');
     const newToken = removeTokenFromBuying(token, player.token);
     if (!newToken) return sendBadRequest(res, 'giao dịch thất bại');
     player.token = newToken;
     player.cards.push(card);
     player.deposit_cards = player.deposit_cards.filter(x => x.id !== card.id);
   }
+  
+  room.game.table.token = gameHandler.addToken(room.game.table.token, token);
 
   // check trigger duke.
   let duke = gameHandler.getDukeFromCards(game.table.dukes, player.cards);
@@ -344,6 +363,7 @@ app.post('/buy_card', (req, res) => {
   }
 
   room.game.currentTurn = gameHandler.nextTurn(room.game);
+  room.game = gameHandler.calculateToFinishGame(room.game);
   // noti
   io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   return sendOkRequest(res);
