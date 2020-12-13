@@ -418,7 +418,7 @@ const CARDS = {
     price: {
       [COLOR.WHITE]: 3,
     },
-    image: '1_red_3_2'
+    image: '1_red_3'
   },
   40: {
     id: 40,
