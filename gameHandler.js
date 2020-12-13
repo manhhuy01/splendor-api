@@ -134,7 +134,7 @@ const nextTurn = (game) => {
 
 const getDukeFromCards = (dukes, cards) => {
   const dukeAccept = dukes.filter(duke => {
-    let valid = false;
+    let valid = true;
     Object.keys(duke.price).forEach(color => {
       const colorCards = cards.filter(x=>x.property === color);
       if(colorCards.length < duke.price[color]) valid = false;
