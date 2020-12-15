@@ -359,7 +359,7 @@ app.post('/buy_card', (req, res) => {
   let duke = gameHandler.getDukeFromCards(game.table.dukes, player.cards);
   if (duke) {
     player.dukes.push(duke);
-    game.table.dukes = game.table.dukes.filter(x => x.id === duke.id);
+    game.table.dukes = game.table.dukes.filter(x => x.id !== duke.id);
   }
 
   room.game.currentTurn = gameHandler.nextTurn(room.game);
