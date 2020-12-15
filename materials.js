@@ -89,7 +89,7 @@ const CARDS = {
     property: COLOR.BLACK,
     pv: 1,
     price: {
-      [COLOR.RED]: 4,
+      [COLOR.BLUE]: 4,
     },
     image: '1_black_4'
   },
