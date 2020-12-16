@@ -269,8 +269,11 @@ app.post('/deposit_card', (req, res) => {
     }
   }
 
-  room.game.currentTurn = gameHandler.nextTurn(room.game);
-  room.game = gameHandler.calculateToFinishGame(room.game);
+  if (gameHandler.sumToken(player.token) <= 10) {
+    room.game.currentTurn = gameHandler.nextTurn(room.game);
+    room.game = gameHandler.calculateToFinishGame(room.game);
+  }
+
   // noti
   io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   return sendOkRequest(res);

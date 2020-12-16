@@ -509,7 +509,7 @@ const CARDS = {
     price: {
       [COLOR.BLUE]: 2,
       [COLOR.GREEN]: 3,
-      [COLOR.RED]: 3,
+      [COLOR.BLACK]: 3,
     },
     image: '2_blue_2_3_3'
   },
