@@ -27,7 +27,7 @@ const initTurn = (players) => {
   }));
 };
 const initGame = (numberPlayer) => {
-  
+
   let game = {
     finished: false,
     started: true,
@@ -62,6 +62,7 @@ const initGame = (numberPlayer) => {
     },
     currentTurn: 1,
     round: 1,
+    winners: []
   };
   // lật bài
   game.table.card_table.up[1] = game.table.card_table.down[1].splice(0, 4);
@@ -69,13 +70,13 @@ const initGame = (numberPlayer) => {
   game.table.card_table.up[3] = game.table.card_table.down[3].splice(0, 4);
 
 
-  if(numberPlayer === 3){
+  if (numberPlayer === 3) {
     [COLOR.BLACK, COLOR.BLUE, COLOR.GREEN, COLOR.RED, COLOR.WHITE].forEach(color => game.table.token[color] = 5);
     game.table.dukes = game.table.dukes.splice(0, 4);
     delete game.players[4];
   }
 
-  if(numberPlayer === 2){
+  if (numberPlayer === 2) {
     [COLOR.BLACK, COLOR.BLUE, COLOR.GREEN, COLOR.RED, COLOR.WHITE].forEach(color => game.table.token[color] = 4);
     game.table.dukes = game.table.dukes.splice(0, 3);
     delete game.players[4];
@@ -107,7 +108,7 @@ const removeToken = (curToken, token) => {
 };
 
 const sumToken = (token) => {
-  return Object.keys(token).reduce((agg, item)=> agg+= token[item], 0);
+  return Object.keys(token).reduce((agg, item) => agg += token[item], 0);
 };
 
 const validateRoomAndTurn = (rooms, socketId, roomId) => {
@@ -117,7 +118,7 @@ const validateRoomAndTurn = (rooms, socketId, roomId) => {
   // validate
   if (!room) return;
   if (!room.game.started) return;
-  
+
   const user = room.players.find(x => x.socketId === socketId);
   const player = room.game.players[user.turn];
   if (!player) return;
@@ -136,8 +137,8 @@ const getDukeFromCards = (dukes, cards) => {
   const dukeAccept = dukes.filter(duke => {
     let valid = true;
     Object.keys(duke.price).forEach(color => {
-      const colorCards = cards.filter(x=>x.property === color);
-      if(colorCards.length < duke.price[color]) valid = false;
+      const colorCards = cards.filter(x => x.property === color);
+      if (colorCards.length < duke.price[color]) valid = false;
     });
     return valid;
   });
@@ -146,37 +147,37 @@ const getDukeFromCards = (dukes, cards) => {
 
 const calculateToFinishGame = game => {
   let newGame = cloneDeep(game);
-  if(newGame.currentTurn !== 1) return newGame;
+  if (newGame.currentTurn !== 1) return newGame;
   let winners = [];
   let bestPointValue = 0;
   let minCard = 100;
   let minDepositCard = 100;
   Object.keys(newGame.players).forEach(turn => {
     newGame.players[turn].pv = 0;
-    newGame.players[turn].pv += newGame.players[turn].cards.reduce((pv, card)=> pv+= card.pv ,0);
-    newGame.players[turn].pv += newGame.players[turn].dukes.reduce((pv, duke)=> pv+= duke.pv, 0);
-    if(newGame.players[turn].pv >= 15){
-      winners.push(newGame.players[turn]);
-      if(newGame.players[turn].pv > bestPointValue) bestPointValue = newGame.players[turn].pv;
-      if(newGame.players[turn].cards.length < minCard){
+    newGame.players[turn].pv += newGame.players[turn].cards.reduce((pv, card) => pv += card.pv, 0);
+    newGame.players[turn].pv += newGame.players[turn].dukes.reduce((pv, duke) => pv += duke.pv, 0);
+    if (newGame.players[turn].pv >= 15) {
+      winners.push(turn);
+      if (newGame.players[turn].pv > bestPointValue) bestPointValue = newGame.players[turn].pv;
+      if (newGame.players[turn].cards.length < minCard) {
         minCard = newGame.players[turn].cards.length;
       }
-      if(newGame.players[turn].deposit_cards.length < minDepositCard){
+      if (newGame.players[turn].deposit_cards.length < minDepositCard) {
         minDepositCard = newGame.players[turn].deposit_cards.length;
       }
-        
+
     }
   });
-  if(winners.length > 1){
-    winners = winners.filter(x=> x.pv === bestPointValue);
-    if(winners.length > 1){
-      winners = winners.filter(x=> x.cards.length === minCard);
-      if(winners.length > 1){
-        winners = winners.filter(x=>x.deposit_cards.length === minDepositCard);
+  if (winners.length > 1) {
+    winners = winners.filter(turn => newGame.players[turn].pv === bestPointValue);
+    if (winners.length > 1) {
+      winners = winners.filter(turn => newGame.players[turn].cards.length === minCard);
+      if (winners.length > 1) {
+        winners = winners.filter(turn => newGame.players[turn].deposit_cards.length === minDepositCard);
       }
     }
   }
-  if(winners.length){
+  if (winners.length) {
     newGame.finished = true;
     newGame.winners = winners;
   }

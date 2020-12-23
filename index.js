@@ -36,7 +36,8 @@ let rooms = [
     isFull: false,
     game: {
       started: false,
-    }
+    },
+    messages: [],
   }
 ];
 io.on('connection', (socket) => {
@@ -54,6 +55,7 @@ io.on('connection', (socket) => {
         room.players = room.players.filter(id => id !== idPlayer);
         if (!room.players.length) {
           room.game = gameHandler.resetGame();
+          room.messages = [];
         }
         io.emit('roomInfo', { totalPlayer: players.length, rooms });
       }
@@ -95,8 +97,17 @@ io.on('connection', (socket) => {
     default:
       break;
     }
-
-
+  });
+  socket.on('chat', ({roomId, text}) => {
+    const room = rooms.find(x=>x.id === roomId);
+    if(room){
+      const player = room.players.find(x=>x.socketId === socket.id);
+      if(player && player.name){
+        room.messages = [...room.messages.splice(0, 19), { text, name: player.name, socketId: socket.id}];
+        io.to(`room.${roomId}`).emit(`room.${roomId}.chat`, room );
+      }
+   
+    }
   });
 });
 
@@ -109,7 +120,7 @@ const sendOkRequest = res => {
 };
 
 app.post('/start', (req, res) => {
-  let { roomId } = req.body;
+  let { roomId, numOfPlayer = 4 } = req.body;
   const room = rooms.find(x => x.id === roomId);
   //TODO: validate player
   if (room.players.length < 2) return sendBadRequest(res, 'một mình chơi với dế à?');
@@ -119,8 +130,19 @@ app.post('/start', (req, res) => {
 
     // init game
     // io.to init game
-    room.game = gameHandler.initGame(room.players.length);
+    room.game = gameHandler.initGame(numOfPlayer);
     room.players = gameHandler.initTurn(room.players);
+    io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
+  }
+  return sendOkRequest(res);
+});
+
+app.post('/reset', (req, res) => {
+  let { roomId } = req.body;
+  const room = rooms.find(x => x.id === roomId);
+  //TODO: validate player
+  if (room) {
+    room.game.started = false;
     io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   }
   return sendOkRequest(res);
