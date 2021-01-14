@@ -103,7 +103,10 @@ io.on('connection', (socket) => {
     if(room){
       const player = room.players.find(x=>x.socketId === socket.id);
       if(player && player.name){
-        room.messages = [...room.messages.splice(1, 20), { text, name: player.name, socketId: socket.id}];
+        if(room.messages.length > 20){
+          room.messages = [...room.messages.splice(1, 20),];
+        }
+        room.messages = [...room.messages,  { text, name: player.name, socketId: socket.id} ];
         io.to(`room.${roomId}`).emit(`room.${roomId}.chat`, room );
       }
    
