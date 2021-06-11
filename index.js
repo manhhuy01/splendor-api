@@ -64,52 +64,52 @@ io.on('connection', (socket) => {
 
   socket.on('action', ({ type, data }) => {
     switch (type) {
-    case 'join': {
-      let room = rooms.find(x => x.id === data.roomId);
-      if (room && (room.players.length < room.maxPlayer || room.game.started)) {
-        console.log('user join room ', data.name);
-        socket.join(`room.${data.roomId}`);
-        socket.to(`room.${data.roomId}`).emit('notification', `player ${data.name} has joined`);
+      case 'join': {
+        let room = rooms.find(x => x.id === data.roomId);
+        if (room && (room.players.length < room.maxPlayer || room.game.started)) {
+          console.log('user join room ', data.name);
+          socket.join(`room.${data.roomId}`);
+          socket.to(`room.${data.roomId}`).emit('notification', `player ${data.name} has joined`);
 
-        room.players.push({ name: data.name, socketId: socket.id });
-        if (room.players.length === room.maxPlayer) {
-          room.isFull = true;
+          room.players.push({ name: data.name, socketId: socket.id });
+          if (room.players.length === room.maxPlayer) {
+            room.isFull = true;
+          }
+
+          // thế chỗ
+          if (room.game.started) {
+            [1, 2, 3, 4].forEach(turn => {
+              if (room.game.players[turn] && !room.players.find(x => x.turn === turn)) {
+                const newPlayer = room.players.find(x => x.socketId === socket.id);
+                newPlayer.turn = turn;
+                return;
+              }
+            });
+          }
+
+          io.to(socket.id).emit('join', room);
+          io.to(`room.${data.roomId}`).emit(`room.${data.roomId}.info`, room);
         }
+        io.emit('roomInfo', { totalPlayer: players.length, rooms });
 
-        // thế chỗ
-        if (room.game.started) {
-          [1, 2, 3, 4].forEach(turn => {
-            if (room.game.players[turn] && !room.players.find(x => x.turn === turn)) {
-              const newPlayer = room.players.find(x => x.socketId === socket.id);
-              newPlayer.turn = turn;
-              return;
-            }
-          });
-        }
-
-        io.to(socket.id).emit('join', room);
-        io.to(`room.${data.roomId}`).emit(`room.${data.roomId}.info`, room);
+        break;
       }
-      io.emit('roomInfo', { totalPlayer: players.length, rooms });
-
-      break;
-    }
-    default:
-      break;
+      default:
+        break;
     }
   });
-  socket.on('chat', ({roomId, text}) => {
-    const room = rooms.find(x=>x.id === roomId);
-    if(room){
-      const player = room.players.find(x=>x.socketId === socket.id);
-      if(player && player.name){
-        if(room.messages.length > 20){
+  socket.on('chat', ({ roomId, text }) => {
+    const room = rooms.find(x => x.id === roomId);
+    if (room) {
+      const player = room.players.find(x => x.socketId === socket.id);
+      if (player && player.name) {
+        if (room.messages.length > 20) {
           room.messages = [...room.messages.splice(1, 20),];
         }
-        room.messages = [...room.messages,  { text, name: player.name, socketId: socket.id} ];
-        io.to(`room.${roomId}`).emit(`room.${roomId}.chat`, room );
+        room.messages = [...room.messages, { text, name: player.name, socketId: socket.id }];
+        io.to(`room.${roomId}`).emit(`room.${roomId}.chat`, room);
       }
-   
+
     }
   });
 });
@@ -148,6 +148,20 @@ app.post('/reset', (req, res) => {
     room.game.started = false;
     io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   }
+  // reset hết mẻ lun 
+  players = [];
+  rooms = [
+    {
+      id: 1,
+      maxPlayer: 4,
+      players: [],
+      isFull: false,
+      game: {
+        started: false,
+      },
+      messages: [],
+    }
+  ];
   return sendOkRequest(res);
 });
 
@@ -349,7 +363,7 @@ app.post('/buy_card', (req, res) => {
     return rs;
   }, true);
 
-  if(!validateTokenBuyFromPlayerToken()) return sendBadRequest(res, 'token mua nhiều hơn token có, hack à?');
+  if (!validateTokenBuyFromPlayerToken()) return sendBadRequest(res, 'token mua nhiều hơn token có, hack à?');
 
   let level = materials.getLevelCard(card_id);
   if (!level) return sendBadRequest(res);
@@ -380,7 +394,7 @@ app.post('/buy_card', (req, res) => {
     player.cards.push(card);
     player.deposit_cards = player.deposit_cards.filter(x => x.id !== card.id);
   }
-  
+
   room.game.table.token = gameHandler.addToken(room.game.table.token, token);
 
   // check trigger duke.
