@@ -1,9 +1,9 @@
 // eslint-disable-next-line no-undef
-/*global require, process, console*/
+/*global process*/
 
 const gameHandler = require('./gameHandler');
 const { CARDS } = require('./materials');
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 const express = require('express');
 const app = express();
@@ -325,10 +325,11 @@ app.post('/buy_card', (req, res) => {
   const room = rooms.find(x => x.id === roomId);
   const user = room.players.find(x => x.socketId === socketId);
   const player = room.game.players[user.turn];
+  const token = player.token;
 
   if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(res, 'Dư token không định trả à?');
   // truyền lên token để mua 1 cách đầy đủ trừ card
-  const { card_id, token } = req.body;
+  const { card_id } = req.body;
   const { game } = room;
 
   const validatePlayerEnoughToBuyCard = (card, tokenToBuy) => {
@@ -351,11 +352,16 @@ app.post('/buy_card', (req, res) => {
     }, cloneDeep(tokenToBuy));
   };
 
-  const removeTokenFromBuying = (tokenToBuy, playerToken) => {
+  const removeTokenFromBuying = (tokenToBuy, player) => {
     return Object.keys(tokenToBuy).reduce((newToken, color) => {
-      newToken[color] -= tokenToBuy[color];
+      const cards = player.cards.filter(card => card.property === color);
+      newToken[color] -= (tokenToBuy[color] - cards.length);
+      if (newToken[color] < 0) {
+        newToken[COLOR.GOLD] += newToken[color];
+        newToken[color] = 0;
+      }
       return newToken;
-    }, cloneDeep(playerToken));
+    }, cloneDeep(player.token));
   };
 
   const validateTokenBuyFromPlayerToken = () => Object.keys(token).reduce((rs, color) => {
@@ -380,7 +386,8 @@ app.post('/buy_card', (req, res) => {
     if (game.table.card_table.down[level].length) {
       game.table.card_table.up[level].push(game.table.card_table.down[level].shift());
     }
-    const newToken = removeTokenFromBuying(token, player.token);
+
+    const newToken = removeTokenFromBuying(card.price, player);
     if (!newToken) return sendBadRequest(res, 'Giao dịch thất bại');
     player.token = newToken;
     player.cards.push(card);
@@ -388,7 +395,7 @@ app.post('/buy_card', (req, res) => {
     card = player.deposit_cards.find(x => x.id === card_id);
     if (!card) return sendBadRequest(res, 'mua bài không có trên tay');
     // mua từ bài deposit
-    const newToken = removeTokenFromBuying(token, player.token);
+    const newToken = removeTokenFromBuying(card.price, player);
     if (!newToken) return sendBadRequest(res, 'giao dịch thất bại');
     player.token = newToken;
     player.cards.push(card);

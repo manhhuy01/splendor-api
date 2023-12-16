@@ -26,6 +26,7 @@
     "socket.io": "^3.0.3"
   },
   "devDependencies": {
+    "eslint": "^8.56.0",
     "jest": "^26.6.3"
   }
 }

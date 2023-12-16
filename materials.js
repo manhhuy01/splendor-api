@@ -1,4 +1,3 @@
-/*global module*/
 const COLOR = {
   WHITE: 'white',
   BLUE: 'blue',
