@@ -1,5 +1,5 @@
 
-/*global module,require*/
+/*global */
 const { COLOR, DUKES, CARD_TABLE } = require('./materials');
 const _ = require('lodash');
 const { shuffle } = require('./utils');
@@ -147,7 +147,6 @@ const getDukeFromCards = (dukes, cards) => {
 
 const calculateToFinishGame = game => {
   let newGame = cloneDeep(game);
-  if (newGame.currentTurn !== 1) return newGame;
   let winners = [];
   let bestPointValue = 0;
   let minCard = 100;
@@ -168,6 +167,7 @@ const calculateToFinishGame = game => {
 
     }
   });
+  if (newGame.currentTurn !== 1) return newGame;
   if (winners.length > 1) {
     winners = winners.filter(turn => newGame.players[turn].pv === bestPointValue);
     if (winners.length > 1) {

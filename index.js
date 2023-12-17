@@ -114,7 +114,10 @@ io.on('connection', (socket) => {
   });
 });
 
-const sendBadRequest = (res, mes = 'Lỗi gì chưa rảnh ghi') => {
+const sendBadRequest = (req, res, mes = 'Lỗi gì chưa rảnh ghi') => {
+  let { roomId } = req.body;
+  const room = rooms.find(x => x.id === roomId);
+  io.to(`room.${roomId}`).emit(`room.${roomId}.info`, room);
   res.status(400).send({ error: mes });
 };
 
@@ -126,8 +129,8 @@ app.post('/start', (req, res) => {
   let { roomId, numOfPlayer = 4 } = req.body;
   const room = rooms.find(x => x.id === roomId);
   //TODO: validate player
-  if (room.players.length < 2) return sendBadRequest(res, 'một mình chơi với dế à?');
-  if (room.players.length > 4) return sendBadRequest(res, 'đông quá rồi');
+  if (room.players.length < 2) return sendBadRequest(req,res, 'một mình chơi với dế à?');
+  if (room.players.length > 4) return sendBadRequest(req,res, 'đông quá rồi');
   if (room) {
     room.game.started = true;
 
@@ -187,21 +190,22 @@ app.post('/collect_token', (req, res) => {
   const room = rooms.find(x => x.id === roomId);
   const user = room.players.find(x => x.socketId === socketId);
   const player = room.game.players[user.turn];
-  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(res, 'Dư mà còn bốc');
+  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(req,res, 'Dư mà còn bốc');
 
   let tokenNames = Object.keys(token);
+  let tokenValues = Object.values(token).filter(value => value > 0);
   if (!tokenNames.length) return sendBadRequest(res);
-  if (tokenNames[COLOR.GOLD] > 0) return sendBadRequest(res, 'Mày điên à đi bốc gold');
+  if (token[COLOR.GOLD] > 0) return sendBadRequest(req,res, 'Mày điên à đi bốc gold');
 
-  if (tokenNames.length > 3) return sendBadRequest(res, 'Bốc cho cố vào');
-  if (tokenNames.length > 1) {
+  if (tokenValues.length > 3) return sendBadRequest(req,res, 'Bốc cho cố vào');
+  if (tokenValues.length > 1) {
     let valid = true;
     tokenNames.forEach(x => {
       if (token[x] > 1) valid = false;
     });
-    if (!valid) return sendBadRequest(res, 'Bốc cho cố vào');
+    if (!valid) return sendBadRequest(req,res, 'Bốc cho cố vào');
   }
-  if (tokenNames.length == 1 && token[tokenNames[0]] > 2) return sendBadRequest(res, 'Bốc 2 cái thôi cha');
+  if (tokenValues.length == 1 && tokenValues[0] > 2) return sendBadRequest(req,res, 'Bốc 2 cái thôi cha');
 
   // it's ok input, validate table
   let valid = false;
@@ -209,7 +213,7 @@ app.post('/collect_token', (req, res) => {
     if (token[color] === 1 && room.game.table.token[color] > 0) valid = true;
     if (token[color] === 2 && room.game.table.token[color] > 3) valid = true;
   });
-  if (!valid) return sendBadRequest(res, 'Nhìn số lượng token trên bàn cho kĩ vô');
+  if (!valid) return sendBadRequest(req,res, 'Nhìn số lượng token trên bàn cho kĩ vô');
 
   // everything ok, update game
   player.token = gameHandler.addToken(player.token, token);
@@ -233,13 +237,13 @@ app.post('/return_token', (req, res) => {
   const user = room.players.find(x => x.socketId === socketId);
   const player = room.game.players[user.turn];
 
-  if (gameHandler.sumToken(player.token) < 10) return sendBadRequest(res, 'token nhỏ hơn 10 mới trả');
-  if (gameHandler.sumToken(token) <= 0) return sendBadRequest(res, 'token âm cmnl rồi');
+  if (gameHandler.sumToken(player.token) < 10) return sendBadRequest(req,res, 'token nhỏ hơn 10 mới trả');
+  if (gameHandler.sumToken(token) <= 0) return sendBadRequest(req,res, 'token âm cmnl rồi');
 
   // everything ok, update game
   player.token = gameHandler.removeToken(player.token, token);
   room.game.table.token = gameHandler.addToken(room.game.table.token, token);
-  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(res, 'nhả cho hết coi');
+  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(req,res, 'nhả cho hết coi');
 
   room.game.currentTurn = gameHandler.nextTurn(room.game);
   room.game = gameHandler.calculateToFinishGame(room.game);
@@ -257,7 +261,7 @@ app.post('/throw_turn', (req, res) => {
   const user = room.players.find(x => x.socketId === socketId);
   const player = room.game.players[user.turn];
 
-  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(res, 'Dư token không định trả à?');
+  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(req,res, 'Dư token không định trả à?');
   // không làm gì cả, bỏ lượt
 
   room.game.currentTurn = gameHandler.nextTurn(room.game);
@@ -275,7 +279,7 @@ app.post('/deposit_card', (req, res) => {
   const user = room.players.find(x => x.socketId === socketId);
   const player = room.game.players[user.turn];
 
-  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(res, 'Dư token không định trả à?');
+  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(req,res, 'Dư token không định trả à?');
 
   if (player.deposit_cards.length >= 3) return sendBadRequest(res);
 
@@ -327,7 +331,7 @@ app.post('/buy_card', (req, res) => {
   const player = room.game.players[user.turn];
   const token = player.token;
 
-  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(res, 'Dư token không định trả à?');
+  if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(req,res, 'Dư token không định trả à?');
   // truyền lên token để mua 1 cách đầy đủ trừ card
   const { card_id } = req.body;
   const { game } = room;
@@ -354,14 +358,23 @@ app.post('/buy_card', (req, res) => {
 
   const removeTokenFromBuying = (tokenToBuy, player) => {
     return Object.keys(tokenToBuy).reduce((newToken, color) => {
-      const cards = player.cards.filter(card => card.property === color);
-      newToken[color] -= (tokenToBuy[color] - cards.length);
-      if (newToken[color] < 0) {
-        newToken[COLOR.GOLD] += newToken[color];
-        newToken[color] = 0;
-      }
+      newToken[color] -= tokenToBuy[color]
       return newToken;
     }, cloneDeep(player.token));
+  };
+
+  const givenTokenFromBuying = (priceToken, player) => {
+    return Object.keys(priceToken).reduce((givenToken, color) => {
+      if(!priceToken[color]) return givenToken;
+      const cards = player.cards.filter(card => card.property === color);
+      const numberToken = (priceToken[color] - cards.length)
+      if(numberToken > player.token[color]) {
+        givenToken['gold'] = (givenToken['gold'] || 0) + numberToken - player.token[color];
+      } else {
+        givenToken[color] = numberToken;
+      }
+      return givenToken;
+    }, {});
   };
 
   const validateTokenBuyFromPlayerToken = () => Object.keys(token).reduce((rs, color) => {
@@ -369,40 +382,44 @@ app.post('/buy_card', (req, res) => {
     return rs;
   }, true);
 
-  if (!validateTokenBuyFromPlayerToken()) return sendBadRequest(res, 'token mua nhiều hơn token có, hack à?');
+  if (!validateTokenBuyFromPlayerToken()) return sendBadRequest(req,res, 'token mua nhiều hơn token có, hack à?');
 
   let level = materials.getLevelCard(card_id);
   if (!level) return sendBadRequest(res);
 
   let card = CARDS[card_id];
-  if (!card) return sendBadRequest(res, 'mua card bậy bạ');
-  if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(res, 'Không đủ token để mua');
+  if (!card) return sendBadRequest(req,res, 'mua card bậy bạ');
+  if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(req,res, 'Không đủ token để mua');
 
   // coi thử mua trên bàn hay không
   card = game.table.card_table.up[level].find(c => c.id === card_id);
+
+
 
   if (card) {
     game.table.card_table.up[level] = game.table.card_table.up[level].filter(x => x.id !== card_id);
     if (game.table.card_table.down[level].length) {
       game.table.card_table.up[level].push(game.table.card_table.down[level].shift());
     }
-
-    const newToken = removeTokenFromBuying(card.price, player);
-    if (!newToken) return sendBadRequest(res, 'Giao dịch thất bại');
+    const givenToken = givenTokenFromBuying(card.price, player);
+    const newToken = removeTokenFromBuying(givenToken, player);
+    if (!newToken) return sendBadRequest(req,res, 'Giao dịch thất bại');
     player.token = newToken;
     player.cards.push(card);
+    room.game.table.token = gameHandler.addToken(room.game.table.token, givenToken);
   } else {
     card = player.deposit_cards.find(x => x.id === card_id);
-    if (!card) return sendBadRequest(res, 'mua bài không có trên tay');
+    if (!card) return sendBadRequest(req,res, 'mua bài không có trên tay');
     // mua từ bài deposit
-    const newToken = removeTokenFromBuying(card.price, player);
-    if (!newToken) return sendBadRequest(res, 'giao dịch thất bại');
+    const givenToken = givenTokenFromBuying(card.price, player);
+    const newToken = removeTokenFromBuying(givenToken, player);
+    if (!newToken) return sendBadRequest(req,res, 'giao dịch thất bại');
     player.token = newToken;
     player.cards.push(card);
     player.deposit_cards = player.deposit_cards.filter(x => x.id !== card.id);
+    room.game.table.token = gameHandler.addToken(room.game.table.token, givenToken);
   }
 
-  room.game.table.token = gameHandler.addToken(room.game.table.token, token);
 
   // check trigger duke.
   let duke = gameHandler.getDukeFromCards(game.table.dukes, player.cards);
