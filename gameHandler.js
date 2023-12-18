@@ -185,6 +185,21 @@ const calculateToFinishGame = game => {
 
 };
 
+const givenTokenFromBuying = (priceToken, player) => {
+  return Object.keys(priceToken).reduce((givenToken, color) => {
+    if(!priceToken[color]) return givenToken;
+    const cards = player.cards.filter(card => card.property === color);
+    const numberToken = (priceToken[color] - cards.length)
+    if(numberToken > player.token[color]) {
+      givenToken['gold'] = (givenToken['gold'] || 0) + numberToken - player.token[color];
+      givenToken[color] = player.token[color];
+    } else {
+      givenToken[color] = numberToken;
+    }
+    return givenToken;
+  }, {});
+};
+
 module.exports = {
   initGame,
   resetGame,
@@ -196,4 +211,5 @@ module.exports = {
   nextTurn,
   getDukeFromCards,
   calculateToFinishGame,
+  givenTokenFromBuying,
 };

@@ -240,6 +240,10 @@ app.post('/return_token', (req, res) => {
   if (gameHandler.sumToken(player.token) < 10) return sendBadRequest(req,res, 'token nhỏ hơn 10 mới trả');
   if (gameHandler.sumToken(token) <= 0) return sendBadRequest(req,res, 'token âm cmnl rồi');
 
+  if (Object.keys(token).some(color => token[color] > player.token[color])){
+    return sendBadRequest(req,res, 'Trả quá nhiều token');
+  }
+
   // everything ok, update game
   player.token = gameHandler.removeToken(player.token, token);
   room.game.table.token = gameHandler.addToken(room.game.table.token, token);
@@ -363,20 +367,6 @@ app.post('/buy_card', (req, res) => {
     }, cloneDeep(player.token));
   };
 
-  const givenTokenFromBuying = (priceToken, player) => {
-    return Object.keys(priceToken).reduce((givenToken, color) => {
-      if(!priceToken[color]) return givenToken;
-      const cards = player.cards.filter(card => card.property === color);
-      const numberToken = (priceToken[color] - cards.length)
-      if(numberToken > player.token[color]) {
-        givenToken['gold'] = (givenToken['gold'] || 0) + numberToken - player.token[color];
-      } else {
-        givenToken[color] = numberToken;
-      }
-      return givenToken;
-    }, {});
-  };
-
   const validateTokenBuyFromPlayerToken = () => Object.keys(token).reduce((rs, color) => {
     if (token[color] > player.token[color]) rs = false;
     return rs;
@@ -401,7 +391,7 @@ app.post('/buy_card', (req, res) => {
     if (game.table.card_table.down[level].length) {
       game.table.card_table.up[level].push(game.table.card_table.down[level].shift());
     }
-    const givenToken = givenTokenFromBuying(card.price, player);
+    const givenToken = gameHandler.givenTokenFromBuying(card.price, player);
     const newToken = removeTokenFromBuying(givenToken, player);
     if (!newToken) return sendBadRequest(req,res, 'Giao dịch thất bại');
     player.token = newToken;
@@ -411,7 +401,7 @@ app.post('/buy_card', (req, res) => {
     card = player.deposit_cards.find(x => x.id === card_id);
     if (!card) return sendBadRequest(req,res, 'mua bài không có trên tay');
     // mua từ bài deposit
-    const givenToken = givenTokenFromBuying(card.price, player);
+    const givenToken = gameHandler.givenTokenFromBuying(card.price, player);
     const newToken = removeTokenFromBuying(givenToken, player);
     if (!newToken) return sendBadRequest(req,res, 'giao dịch thất bại');
     player.token = newToken;

@@ -50,3 +50,21 @@ test('getDukeFromCards', () => {
   const duke = gameHandler.getDukeFromCards(dukes, cards);
   expect(duke).not.toBe(undefined);
 });
+
+test('given token from buying', () => {
+  const priceToken = {
+    red: 4
+  }
+  const player = {
+    token : {
+      red: 2,
+      gold: 2
+    },
+    cards: []
+  }
+  const givenTokenFromBuying = gameHandler.givenTokenFromBuying(priceToken, player)
+  expect(givenTokenFromBuying).toEqual({
+    gold: 2,
+    red: 2
+  })
+})
