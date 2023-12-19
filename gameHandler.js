@@ -190,6 +190,7 @@ const givenTokenFromBuying = (priceToken, player) => {
     if(!priceToken[color]) return givenToken;
     const cards = player.cards.filter(card => card.property === color);
     const numberToken = (priceToken[color] - cards.length)
+    if(numberToken <= 0) return givenToken;
     if(numberToken > player.token[color]) {
       givenToken['gold'] = (givenToken['gold'] || 0) + numberToken - player.token[color];
       givenToken[color] = player.token[color];
