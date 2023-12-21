@@ -218,6 +218,7 @@ app.post('/collect_token', (req, res) => {
   // everything ok, update game
   player.token = gameHandler.addToken(player.token, token);
   room.game.table.token = gameHandler.removeToken(room.game.table.token, token);
+  room.game = gameHandler.doneActionTurn(room.game);
 
   if (gameHandler.sumToken(player.token) <= 10) {
     room.game.currentTurn = gameHandler.nextTurn(room.game);
@@ -267,7 +268,7 @@ app.post('/throw_turn', (req, res) => {
 
   if (gameHandler.sumToken(player.token) > 10) return sendBadRequest(req,res, 'Dư token không định trả à?');
   // không làm gì cả, bỏ lượt
-
+  room.game = gameHandler.doneActionTurn(room.game);
   room.game.currentTurn = gameHandler.nextTurn(room.game);
   room.game = gameHandler.calculateToFinishGame(room.game);
   // noti
@@ -315,7 +316,7 @@ app.post('/deposit_card', (req, res) => {
       game.table.token[COLOR.GOLD] -= 1;
     }
   }
-
+  room.game = gameHandler.doneActionTurn(room.game);
   if (gameHandler.sumToken(player.token) <= 10) {
     room.game.currentTurn = gameHandler.nextTurn(room.game);
     room.game = gameHandler.calculateToFinishGame(room.game);
@@ -418,6 +419,7 @@ app.post('/buy_card', (req, res) => {
     game.table.dukes = game.table.dukes.filter(x => x.id !== duke.id);
   }
 
+  room.game = gameHandler.doneActionTurn(room.game);
   room.game.currentTurn = gameHandler.nextTurn(room.game);
   room.game = gameHandler.calculateToFinishGame(room.game);
   // noti

@@ -61,6 +61,7 @@ const initGame = (numberPlayer) => {
       4: _.cloneDeep(NEW_PLAYER)
     },
     currentTurn: 1,
+    lastActionTurn: 0,
     round: 1,
     winners: []
   };
@@ -127,10 +128,16 @@ const validateRoomAndTurn = (rooms, socketId, roomId) => {
 };
 
 const nextTurn = (game) => {
+  if(game.currentTurn !== game.lastActionTurn) return game.currentTurn;
   let turn = game.currentTurn + 1;
   if (turn > Object.keys(game.players).length) turn = 1;
   return turn;
 };
+
+const doneActionTurn = (game) => {
+  game.lastActionTurn = game.currentTurn;
+  return game;
+}
 
 
 const getDukeFromCards = (dukes, cards) => {
@@ -213,4 +220,5 @@ module.exports = {
   getDukeFromCards,
   calculateToFinishGame,
   givenTokenFromBuying,
+  doneActionTurn,
 };
