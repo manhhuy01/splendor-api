@@ -157,7 +157,7 @@ app.post('/reset', (req, res) => {
     {
       id: 1,
       maxPlayer: 4,
-      players: [],
+      players: room.players,
       isFull: false,
       game: {
         started: false,
