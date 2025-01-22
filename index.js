@@ -341,25 +341,6 @@ app.post('/buy_card', (req, res) => {
   const { card_id } = req.body;
   const { game } = room;
 
-  const validatePlayerEnoughToBuyCard = (card, tokenToBuy) => {
-    return Object.keys(card.price).reduce((newToken, color) => {
-      if (!newToken) return newToken;
-      const cardWithColor = player.cards.filter(x => x.property === color);
-      if (card.price[color] <= cardWithColor.length) return newToken;
-
-      const tokenWithColor = tokenToBuy[color] || 0;
-      if (card.price[color] <= cardWithColor.length + tokenWithColor) return newToken;
-
-      const tokenGold = tokenToBuy[COLOR.GOLD] || 0;
-      if (!tokenGold) return undefined;
-      if (card.price[color] <= cardWithColor.length + tokenWithColor + tokenGold) {
-        newToken[COLOR.GOLD] -= (card.price[color] - cardWithColor.length - tokenWithColor);
-        if (newToken[COLOR.GOLD] < 0) return undefined;
-        return newToken;
-      }
-      return newToken;
-    }, cloneDeep(tokenToBuy));
-  };
 
   const removeTokenFromBuying = (tokenToBuy, player) => {
     return Object.keys(tokenToBuy).reduce((newToken, color) => {
@@ -380,7 +361,7 @@ app.post('/buy_card', (req, res) => {
 
   let card = CARDS[card_id];
   if (!card) return sendBadRequest(req,res, 'mua card bậy bạ');
-  if (!validatePlayerEnoughToBuyCard(card, token)) return sendBadRequest(req,res, 'Không đủ token để mua');
+  if (!gameHandler.validatePlayerEnoughToBuyCard(card, player)) return sendBadRequest(req,res, 'Không đủ token để mua');
 
   // coi thử mua trên bàn hay không
   card = game.table.card_table.up[level].find(c => c.id === card_id);

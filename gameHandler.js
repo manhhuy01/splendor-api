@@ -198,15 +198,39 @@ const givenTokenFromBuying = (priceToken, player) => {
     const cards = player.cards.filter(card => card.property === color);
     const numberToken = (priceToken[color] - cards.length)
     if(numberToken <= 0) return givenToken;
-    if(numberToken > player.token[color]) {
-      givenToken['gold'] = (givenToken['gold'] || 0) + numberToken - player.token[color];
-      givenToken[color] = player.token[color];
+    if(numberToken > (player.token[color] || 0)) {
+      givenToken['gold'] = (givenToken['gold'] || 0) + numberToken - (player.token[color] || 0);
+      if (player.token[color]) {
+        givenToken[color] = player.token[color];
+      }
     } else {
       givenToken[color] = numberToken;
     }
     return givenToken;
   }, {});
 };
+
+
+const validatePlayerEnoughToBuyCard = (card, player) => {
+  const tokenToBuy = player.token;
+  return Object.keys(card.price).reduce((newToken, color) => {
+    if (!newToken) return newToken;
+    const cardWithColor = player.cards.filter(x => x.property === color);
+    if (card.price[color] <= cardWithColor.length) return newToken;
+
+    const tokenWithColor = tokenToBuy[color] || 0;
+    if (card.price[color] <= cardWithColor.length + tokenWithColor) return newToken;
+
+    const tokenGold = tokenToBuy[COLOR.GOLD] || 0;
+    if (!tokenGold) return undefined;
+    if (card.price[color] <= cardWithColor.length + tokenWithColor + tokenGold) {
+      newToken[COLOR.GOLD] -= (card.price[color] - cardWithColor.length - tokenWithColor);
+      if (newToken[COLOR.GOLD] < 0) return undefined;
+      return newToken;
+    }
+    return newToken;
+  }, cloneDeep(tokenToBuy));
+}; 
 
 module.exports = {
   initGame,
@@ -221,4 +245,5 @@ module.exports = {
   calculateToFinishGame,
   givenTokenFromBuying,
   doneActionTurn,
+  validatePlayerEnoughToBuyCard,
 };
