@@ -324,3 +324,53 @@ test('given token from buying 5', () => {
     gold: 6
   })
 })
+
+
+test('validate player enough to buy 4', () => {
+  const card = {
+    price: {
+      [COLOR.BLACK]: 1,
+      [COLOR.BLUE]: 2,
+      [COLOR.WHITE]: 4,
+    }
+  }
+  const player = {
+    token : {
+      black: 1,
+      green: 1,
+      gold: 1,
+    },
+    cards: [
+      {
+        id: 68,
+        property: COLOR.BLACK,
+      },
+      {
+        id: 68,
+        property: COLOR.BLACK,
+      },
+      {
+        id: 68,
+        property: COLOR.BLACK,
+      },
+      {
+        id: 68,
+        property: COLOR.BLUE,
+      },
+      {
+        id: 68,
+        property: COLOR.BLUE,
+      },
+      {
+        id: 68,
+        property: COLOR.BLUE,
+      },
+      {
+        id: 68,
+        property: COLOR.WHITE,
+      },
+    ]
+  }
+  const result = gameHandler.validatePlayerEnoughToBuyCard(card, player)
+  expect(result).toBe(undefined)
+})

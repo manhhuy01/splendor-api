@@ -223,7 +223,7 @@ const validatePlayerEnoughToBuyCard = (card, player) => {
 
     const tokenGold = tokenToBuy[COLOR.GOLD] || 0;
     if (!tokenGold) return undefined;
-    if (card.price[color] <= cardWithColor.length + tokenWithColor + tokenGold) {
+    if (card.price[color] > cardWithColor.length + tokenWithColor) {
       newToken[COLOR.GOLD] -= (card.price[color] - cardWithColor.length - tokenWithColor);
       if (newToken[COLOR.GOLD] < 0) return undefined;
       return newToken;
